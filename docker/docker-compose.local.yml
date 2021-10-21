@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  process:
+    container_name: excell-process
+    #image: excell_process:v1
+    build:
+      context: ./../
+      dockerfile: ./docker/excell-process-local.dockerfile
+      args:
+        ENV: local
+    ports:
+      - 3021:8080
+    volumes:
+      - "./../src:/app/excell/code/src"
+      - "./../docker/env/excell-process-local.env:/app/excell/code/.env"
+      #- "./../k6:/app/excell/k6"
+    networks:
+      excell:
+        ipv4_address: 172.1.0.9
+    links:
+      - db
+  db:
+    hostname: db.excell.docker
+    image: 'mysql:5.7.35'
+    container_name: excell-db
+    shm_size: 2gb
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_MAINT_PASSWORD}
+    ports:
+      - "${MYSQL_PORT}:3306"
+    volumes:
+      - "./mysql-data:/var/lib/mysql"
+      - "./init-scripts:/docker-entrypoint-initdb.d"
+    networks:
+      excell:
+        ipv4_address: 172.1.0.7
+
+networks:
+  excell:
+    external: false
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.1.0.0/16
+          gateway: 172.1.0.1
